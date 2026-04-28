@@ -6,7 +6,7 @@ while methods such as queries / mutations will be related to objects
 based on either output type or semantic understanding
 """
 
-from graphqler.config import BUILT_IN_TYPES, BUILT_IN_TYPE_KINDS
+from graphqler import config
 
 
 class ObjectDependencyResolver:
@@ -54,16 +54,16 @@ class ObjectDependencyResolver:
             # - if the kind is SCALAR/OBJECT/INTERFACE/UNION/ENUM/INPUT_OBJECT,
             # - if kind is NON_NULL
             # - if kind is LIST
-            if field["kind"] in BUILT_IN_TYPE_KINDS and field["kind"] != "NON_NULL" and field["kind"] != "LIST":
-                if field["type"] not in BUILT_IN_TYPES:
+            if field["kind"] in config.BUILT_IN_TYPE_KINDS and field["kind"] != "NON_NULL" and field["kind"] != "LIST":
+                if not config.is_builtin_scalar_type(field["type"]):
                     soft_dependent_objects.append(field["type"])
             if field["kind"] == "NON_NULL":
                 base_oftype = self.get_base_oftype(field["ofType"])
-                if base_oftype["name"] not in BUILT_IN_TYPES:
+                if not config.is_builtin_scalar_type(base_oftype["name"]):
                     hard_dependent_objects.append(base_oftype["name"])
             elif field["kind"] == "LIST":
                 base_oftype = self.get_base_oftype(field["ofType"])
-                if base_oftype["name"] not in BUILT_IN_TYPES:
+                if not config.is_builtin_scalar_type(base_oftype["name"]):
                     # TODO: Figure out if lists can have hard dependencies (a non-zero lengthed list)
                     soft_dependent_objects.append(base_oftype["name"])
 

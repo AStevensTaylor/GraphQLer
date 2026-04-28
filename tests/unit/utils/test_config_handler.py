@@ -12,3 +12,4 @@ def test_generate_new_config_handles_paths_with_spaces(tmp_path):
     parsed = tomllib.loads(config_path.read_text())
     assert parsed["DEBUG"] is False
     assert "CUSTOM_HEADERS" in parsed
+    assert "CUSTOM_SCALARS" in parsed

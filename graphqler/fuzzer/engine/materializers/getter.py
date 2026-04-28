@@ -4,7 +4,9 @@ Used by the materializer to understand how to get values for fields
 """
 
 from datetime import datetime, timedelta
+import uuid
 from graphqler.utils.objects_bucket import ObjectsBucket
+from graphqler import config
 import random
 import string
 
@@ -12,6 +14,13 @@ import string
 class Getter:
     def __init__(self):
         pass
+
+    def _is_valid_uuid(self, value: str) -> bool:
+        try:
+            uuid.UUID(str(value))
+            return True
+        except (ValueError, TypeError, AttributeError):
+            return False
 
     def get_random_string(self, input_name: str) -> str:
         # Maybe we can use the input name somehow? (Like if the input name contains "name")
@@ -38,6 +47,12 @@ class Getter:
         if random_id.strip() == "":
             random_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
         return '"' + str(random_id) + '"'
+
+    def get_random_uuid(self, input_name: str, objects_bucket: ObjectsBucket) -> str:
+        random_id = self.get_random_id_from_bucket(input_name, objects_bucket)
+        if not self._is_valid_uuid(random_id):
+            random_id = str(uuid.uuid4())
+        return f'"{random_id}"'
 
     def get_random_date(self, input_name: str) -> str:
         return f"\"{datetime.today().strftime('%Y-%m-%d')}\""
@@ -76,6 +91,36 @@ class Getter:
         return f'"{graphql_datetime}"'
 
     def get_random_custom_scalar(self, input_name: str, scalar_type: str, objects_bucket: ObjectsBucket) -> str:
+        configured_strategy = config.get_custom_scalar_strategy(scalar_type)
+        if configured_strategy == "string":
+            return self.get_random_string(input_name)
+        elif configured_strategy == "int":
+            return str(self.get_random_int(input_name))
+        elif configured_strategy == "float":
+            return str(self.get_random_float(input_name))
+        elif configured_strategy == "boolean":
+            return str(self.get_random_bool(input_name))
+        elif configured_strategy == "date":
+            return self.get_random_date(input_name)
+        elif configured_strategy == "id":
+            return self.get_random_id(input_name, objects_bucket)
+        elif configured_strategy == "uuid":
+            return self.get_random_uuid(input_name, objects_bucket)
+        elif configured_strategy == "cursor":
+            if input_name == "after" or input_name == "from":
+                return "null"
+            return str(1)
+        elif configured_strategy == "time":
+            return self.get_random_time(input_name)
+        elif configured_strategy == "long":
+            return self.get_random_long(input_name)
+        elif configured_strategy == "datetime":
+            return self.get_random_datetime(input_name)
+        elif configured_strategy == "json":
+            return self.get_random_json(input_name)
+        elif configured_strategy is not None:
+            raise Exception(f"Unsupported custom scalar strategy configured for {scalar_type}: {configured_strategy}")
+
         # Must be a custom scalar, check if it's an ID, if not then just fail
         if scalar_type.lower().endswith("id") or scalar_type.lower().endswith("ids"):
             return str(self.get_random_id(input_name, objects_bucket))

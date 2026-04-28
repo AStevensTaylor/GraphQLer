@@ -1,6 +1,7 @@
 import re
 
 from .utils import find_closest_string, strip_crud_prefix
+from graphqler import config
 from graphqler.utils.parser_utils import get_base_oftype
 
 # Used only in the name-based fallback when no operation output type is available.
@@ -255,4 +256,4 @@ class Resolver:
         if input["ofType"]:
             input = get_base_oftype(input["ofType"])
 
-        return input["kind"] == "SCALAR" and input["type"] == "ID"
+        return input["kind"] == "SCALAR" and config.is_identifier_scalar_type(input["type"])

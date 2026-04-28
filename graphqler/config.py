@@ -74,6 +74,38 @@ GRAPH_VISUALIZATION_OUTPUT = "dependency_graph.png"
 """General Graphql definitions: https://spec.graphql.org/October2021/"""
 BUILT_IN_TYPES = ["ID", "Int", "Float", "String", "Boolean"]
 BUILT_IN_TYPE_KINDS = ["SCALAR", "OBJECT", "INTERFACE", "UNION", "ENUM", "INPUT_OBJECT", "LIST", "NON_NULL"]
+CUSTOM_SCALARS: dict[str, str] = {}
+
+
+def get_builtin_scalar_types() -> set[str]:
+  return set(BUILT_IN_TYPES) | set(CUSTOM_SCALARS.keys())
+
+
+def is_builtin_scalar_type(type_name: str | None) -> bool:
+  return bool(type_name) and type_name in get_builtin_scalar_types()
+
+
+def get_custom_scalar_strategy(type_name: str | None) -> str | None:
+  if not type_name:
+    return None
+
+  configured_strategy = CUSTOM_SCALARS.get(type_name)
+  if configured_strategy is not None:
+    return str(configured_strategy).strip().lower()
+
+  lowered_type_name = type_name.lower()
+  for scalar_name, scalar_strategy in CUSTOM_SCALARS.items():
+    if scalar_name.lower() == lowered_type_name:
+      return str(scalar_strategy).strip().lower()
+
+  return None
+
+
+def is_identifier_scalar_type(type_name: str | None) -> bool:
+  if type_name == "ID":
+    return True
+
+  return get_custom_scalar_strategy(type_name) in {"id", "uuid"}
 
 """For materializers"""
 MAX_OBJECT_CYCLES = 5

@@ -102,3 +102,9 @@ SKIP_NODES = []
 # Put custom headers here
 [CUSTOM_HEADERS]
 Accept = "application/json"
+
+# Map schema custom scalar names to GraphQLer materialization strategies.
+# Supported strategies: string, int, float, boolean, id, uuid, date, time,
+# datetime, long, json, cursor.
+[CUSTOM_SCALARS]
+# UUID = "uuid"

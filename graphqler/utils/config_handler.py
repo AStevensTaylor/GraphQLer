@@ -28,7 +28,7 @@ def write_config_to_toml(path: str) -> None:
 
     lines = ["# GraphQLer configuration\n"]
     for key, template_value in template.items():
-        if key == "CUSTOM_HEADERS":
+        if key in {"CUSTOM_HEADERS", "CUSTOM_SCALARS"}:
             continue  # written as a TOML section below
         if key in _REDACTED_FIELDS:
             lines.append(f'{key} = ""\n')
@@ -52,11 +52,12 @@ def write_config_to_toml(path: str) -> None:
             escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
             lines.append(f'{key} = "{escaped}"\n')
 
-    lines.append("\n[CUSTOM_HEADERS]\n")
-    headers: dict = getattr(config, "CUSTOM_HEADERS", None) or template.get("CUSTOM_HEADERS", {})
-    for k, v in headers.items():
-        ev = str(v).replace("\\", "\\\\").replace('"', '\\"')
-        lines.append(f'{k} = "{ev}"\n')
+    for section_name in ("CUSTOM_HEADERS", "CUSTOM_SCALARS"):
+        lines.append(f"\n[{section_name}]\n")
+        section_values: dict = getattr(config, section_name, None) or template.get(section_name, {})
+        for k, v in section_values.items():
+            ev = str(v).replace("\\", "\\\\").replace('"', '\\"')
+            lines.append(f'{k} = "{ev}"\n')
 
     with open(path, "w") as fh:
         fh.writelines(lines)

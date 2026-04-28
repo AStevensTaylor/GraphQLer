@@ -44,7 +44,7 @@ class InterfaceListParser(Parser):
             formatted_possible_type = {
                 "kind": possible_type["kind"],
                 "name": possible_type["name"],
-                "ofType": possible_type["ofType"],
+                "ofType": possible_type.get("ofType"),
                 "type": possible_type["name"] if possible_type["kind"] == "OBJECT" else None,
             }
             possible_types_list.append(formatted_possible_type)

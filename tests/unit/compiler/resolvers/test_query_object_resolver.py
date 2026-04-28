@@ -1,5 +1,6 @@
 """Unit tests for QueryObjectResolver._resolve_produces and ids dependency resolution."""
 
+from graphqler import config
 from graphqler.compiler.resolvers.query_object_resolver import QueryObjectResolver
 
 
@@ -219,6 +220,10 @@ class TestQueryObjectResolverIdsDependency:
 
     def setup_method(self):
         self.resolver = QueryObjectResolver()
+        self.original_custom_scalars = dict(config.CUSTOM_SCALARS)
+
+    def teardown_method(self):
+        config.CUSTOM_SCALARS = self.original_custom_scalars
 
     def _objects_rick_and_morty(self):
         return {
@@ -273,6 +278,24 @@ class TestQueryObjectResolverIdsDependency:
         result = self.resolver.resolve_inputs_related_to_ids_to_objects(
             "getNodeByKey", {"id": True}, objects, operation=operation
         )
+        assert result["hardDependsOn"].get("id") == "Character"
+
+    def test_configured_uuid_scalar_is_treated_as_identifier_input(self):
+        config.CUSTOM_SCALARS = {"UUID": "uuid"}
+        objects = self._objects_rick_and_morty()
+        operation = {"output": {"kind": "OBJECT", "name": "Character", "type": "Character", "ofType": None}}
+        uuid_input = {
+            "name": "id",
+            "kind": "NON_NULL",
+            "type": None,
+            "ofType": {"kind": "SCALAR", "name": "UUID", "type": "UUID", "ofType": None},
+        }
+
+        inputs_related_to_ids = self.resolver.get_inputs_related_to_ids({"id": uuid_input}, {})
+        result = self.resolver.resolve_inputs_related_to_ids_to_objects(
+            "getNodeByKey", inputs_related_to_ids, objects, operation=operation
+        )
+
         assert result["hardDependsOn"].get("id") == "Character"
 
     def test_output_type_non_null_list_inference(self):

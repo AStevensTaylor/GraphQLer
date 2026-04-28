@@ -36,7 +36,7 @@ class UnionListParser(Parser):
             filtered_union_value = {
                 "kind": union_value["kind"],
                 "name": union_value["name"],
-                "ofType": union_value["ofType"],
+                "ofType": union_value.get("ofType"),
                 "type": union_value["name"] if union_value["kind"] == "OBJECT" else None,
             }
             list_of_union_values.append(filtered_union_value)

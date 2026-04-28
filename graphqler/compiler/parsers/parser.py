@@ -28,10 +28,11 @@ class Parser(ABC):
         Returns:
             dict: The ofType dict
         """
-        ofType = field["ofType"]
+        ofType = field.get("ofType")
         if ofType:
-            nested_ofType = self.extract_oftype(field["ofType"])
-            return {"kind": ofType["kind"], "name": ofType["name"], "ofType": nested_ofType, "type": ofType["name"]}
+            nested_ofType = self.extract_oftype(ofType)
+            type_name = ofType.get("name")
+            return {"kind": ofType.get("kind"), "name": type_name, "ofType": nested_ofType, "type": type_name}
         else:
             return None
 
@@ -48,11 +49,11 @@ class Parser(ABC):
         for arg in args:
             arg_info = {
                 "name": arg["name"],
-                "description": arg["description"],
+                "description": arg.get("description"),
                 "type": arg["type"]["name"] if "name" in arg["type"] else None,
                 "kind": arg["type"]["kind"] if "kind" in arg["type"] else None,
                 "ofType": self.extract_oftype(arg["type"]),
-                "defaultValue": arg["defaultValue"],
+                "defaultValue": arg.get("defaultValue"),
             }
             input_args[arg["name"]] = arg_info
         return input_args

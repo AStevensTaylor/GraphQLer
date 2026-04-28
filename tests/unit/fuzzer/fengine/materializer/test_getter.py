@@ -1,8 +1,10 @@
 """Unit tests for Getter.get_closest_value_to_input, focusing on the plural→singular fallback."""
 
 import pytest
+import uuid
 from unittest.mock import MagicMock
 
+from graphqler import config
 from graphqler.fuzzer.engine.materializers.getter import Getter
 
 
@@ -59,3 +61,22 @@ class TestGetterClosestValueSingularFallback:
         bucket = _make_bucket("Character", {})
         with pytest.raises(Exception, match="Could not find a value"):
             self.getter.get_closest_value_to_input("name", "Character", bucket)
+
+
+class TestGetterConfiguredCustomScalars:
+    def setup_method(self):
+        self.original_custom_scalars = dict(config.CUSTOM_SCALARS)
+        config.CUSTOM_SCALARS = {"UUID": "uuid"}
+        self.getter = Getter()
+
+    def teardown_method(self):
+        config.CUSTOM_SCALARS = self.original_custom_scalars
+
+    def test_configured_uuid_scalar_generates_valid_uuid(self):
+        bucket = MagicMock()
+        bucket.is_empty.return_value = True
+
+        value = self.getter.get_random_scalar("workspaceId", "UUID", bucket)
+
+        assert value.startswith('"') and value.endswith('"')
+        uuid.UUID(value.strip('"'))

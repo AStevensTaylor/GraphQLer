@@ -59,3 +59,26 @@ def test_compile_allows_schema_file_from_path_config(tmp_path, monkeypatch):
         __main__.main(args)
 
     assert compiler_cls.call_args.kwargs["schema_file"] == str(schema_path)
+
+
+def test_cli_proxy_overrides_config_proxy(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "PROXY", None)
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    args = _make_args(str(output_dir), url="https://example.test/graphql", proxy="http://cli-proxy:8080")
+
+    def _set_config(new_config: dict):
+        config.PROXY = new_config["PROXY"]
+
+    with (
+        patch("graphqler.__main__.does_config_file_exist_in_path", return_value=True),
+        patch("graphqler.__main__.parse_config", return_value={"PROXY": "http://config-proxy:8080"}),
+        patch("graphqler.__main__.set_config", side_effect=_set_config),
+        patch("graphqler.__main__.get_or_create_directory"),
+        patch("graphqler.__main__.write_config_to_toml"),
+        patch("graphqler.__main__.Compiler"),
+        patch("graphqler.__main__.run_compile_mode"),
+    ):
+        __main__.main(args)
+
+    assert config.PROXY == "http://cli-proxy:8080"

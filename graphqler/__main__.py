@@ -149,10 +149,6 @@ def main(args: dict):
         config.OUTPUT_DIRECTORY = args['path']
     get_or_create_directory(config.OUTPUT_DIRECTORY)
 
-    # Set proxy if provided
-    if 'proxy' in args and args['proxy']:
-        config.PROXY = args['proxy']
-
     # Parse config if provided
     if preloaded_config is not None:
         if config_source == "provided":
@@ -174,6 +170,9 @@ def main(args: dict):
     # silently override the directory the user explicitly specified on the command line.
     if 'path' in args and args['path']:
         config.OUTPUT_DIRECTORY = args['path']
+
+    if 'proxy' in args and args['proxy']:
+        config.PROXY = args['proxy']
 
     if args.get('auth'):
         # Multi-auth support: --auth profile=token or just --auth token (defaults to primary)
