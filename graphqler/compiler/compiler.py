@@ -22,15 +22,18 @@ import json
 
 
 class Compiler:
-    def __init__(self, save_path: str, url: str):
+    def __init__(self, save_path: str, url: str, schema_file: str = ""):
         """Initializes the compiler,
             creates all necessary file paths to save the outputs for run if doesn't already exist
 
         Args:
             save_path (str): Save directory path
             url (str): URL for graphql introspection query to hit
+            schema_file (str): Optional path to a local GraphQL introspection JSON file.
+                When provided, live introspection is skipped.
         """
         self.save_path = save_path
+        self.schema_file = schema_file
         self.introspection_result_save_path = Path(save_path) / Path(config.INTROSPECTION_RESULT_FILE_NAME)
         self.object_list_save_path = Path(save_path) / config.OBJECT_LIST_FILE_NAME
         self.input_object_list_save_path = Path(save_path) / config.INPUT_OBJECT_LIST_FILE_NAME
@@ -84,15 +87,19 @@ class Compiler:
 
     def run(self):
         """The only function required to be run from the caller, will perform:
-        1. Introspection query
-        2. Trying clairvoyance if introspection query fails
+        1. Loading schema from file (if --schema-file was provided), OR
+        2. Introspection query, falling back to clairvoyance on failure
         3. Run the parsers, storing files into objects / query / mutations
         4. Creating dependencies between objects and attaching methods (query/mutations) to objects
         """
-        introspection_result = self.get_introspection_query_results()
-        if introspection_result is None or introspection_result == {}:
-            print("(C) Introspection query failed, trying clairvoyance")
-            introspection_result = self.get_clairvoyance_results()
+        if self.schema_file:
+            print(f"(C) Loading schema from file: {self.schema_file}")
+            introspection_result = self.load_schema_from_file(self.schema_file)
+        else:
+            introspection_result = self.get_introspection_query_results()
+            if introspection_result is None or introspection_result == {}:
+                print("(C) Introspection query failed, trying clairvoyance")
+                introspection_result = self.get_clairvoyance_results()
 
         if introspection_result is None or introspection_result == {}:
             raise SystemExit("(E) Couldn't get schema of the API. Exiting")
@@ -145,6 +152,49 @@ class Compiler:
         )
         schema = json.loads(schema_str)
         return schema
+
+    def load_schema_from_file(self, schema_file: str) -> dict:
+        """Load a GraphQL introspection result from a local JSON file.
+
+        The file must contain a standard GraphQL introspection response, i.e. a
+        JSON object with either a top-level ``data`` key (as returned by a live
+        introspection request) or a direct ``__schema`` key (the raw schema
+        object).  Both formats are normalised to the ``{"data": {"__schema":
+        ...}}`` envelope that the rest of the compiler pipeline expects.
+
+        Args:
+            schema_file (str): Path to the local JSON introspection file.
+
+        Returns:
+            dict: Normalised introspection result ready for the parsers.
+
+        Raises:
+            SystemExit: If the file cannot be read or does not contain a
+                recognisable GraphQL introspection structure.
+        """
+        try:
+            with open(schema_file, "r") as f:
+                raw = json.load(f)
+        except FileNotFoundError:
+            raise SystemExit(f"(E) Schema file not found: {schema_file}")
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"(E) Schema file is not valid JSON: {schema_file} — {exc}")
+
+        # Normalise to {"data": {"__schema": ...}} envelope
+        if "data" in raw and "__schema" in raw["data"]:
+            # Already in the expected envelope format
+            result = raw
+        elif "__schema" in raw:
+            # Raw schema object — wrap it
+            result = {"data": raw}
+        else:
+            raise SystemExit(
+                f"(E) Schema file does not contain a recognisable GraphQL introspection "
+                f"structure (expected a 'data.__schema' or '__schema' key): {schema_file}"
+            )
+
+        write_json_to_file(result, self.introspection_result_save_path)
+        return result
 
     def run_parsers_and_save(self, introspection_result: dict):
         """Runs all the parsers (parses introspection result sections out) and saves them to a YAML file

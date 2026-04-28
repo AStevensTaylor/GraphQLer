@@ -149,6 +149,16 @@ python -m graphqler --mode compile --url <URL> --path <SAVE_PATH>
 
 Runs the full compilation pipeline: introspection → parsing → dependency resolution → dependency graph → fuzzing chains. After compiling, you can view the compiled results in `<SAVE_PATH>/compiled`. A dependency graph image (`dependency_graph.png`) is also generated for inspection. Fuzzing chains are saved under `<SAVE_PATH>/compiled/chains/` — these files are human-readable and can be edited before fuzzing. Any `UNKNOWNS` in the compiled `.yaml` files can be manually marked; however, if not marked the fuzzer will still run them but just without using a dependency chain.
 
+#### Compiling from a local schema file
+
+If the target API does not support introspection (or you already have the schema), you can load it from a local JSON file instead of querying a live endpoint.  The file must be a standard GraphQL introspection response — either the full `{"data": {"__schema": …}}` envelope produced by a live introspection request, or the raw `{"__schema": …}` object emitted by tools such as `graphql-inspector` or Apollo Studio.
+
+```sh
+python -m graphqler --mode compile --schema-file ./schema.json --path <SAVE_PATH>
+```
+
+`--url` is not required when `--schema-file` is provided for `compile`, `compile-graph`, and `run` modes.  The `--schema-file` path can also be set via `SCHEMA_FILE` in `config.toml`.
+
 To enable IDOR detection, pass `--idor-auth` during compile:
 
 ```sh

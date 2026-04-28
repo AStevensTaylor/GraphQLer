@@ -6,6 +6,11 @@ DEBUG = false
 # For clairvoyance
 WORDLIST_PATH = "static/wordlist.txt"
 
+# Path to a local GraphQL introspection JSON file.
+# When set, the compiler loads the schema from this file instead of running live introspection.
+# Accepts both the {"data": {"__schema": ...}} envelope and the raw {"__schema": ...} object.
+SCHEMA_FILE = ""
+
 # For the resolver
 MAX_LEVENSHTEIN_THRESHOLD = 20  # A very high threshold, we could probably lower this, but this almost guarantees us to find a matching object name - ID
 
