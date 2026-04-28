@@ -21,7 +21,7 @@ def run_compile_mode(compiler: Compiler, path: str, url: str):
     Args:
         compiler (Compiler): An instance of the Compiler class to use for compilation.  
         path (str): Directory for all compilation outputs to be saved to
-        url (str): URL of the target
+        url (str): URL of the target (may be empty when --schema-file is used)
     """
     print("(C) In compile mode!")
     run_compile_graph_mode(compiler, path, url)
@@ -38,7 +38,7 @@ def run_compile_graph_mode(compiler: Compiler, path: str, url: str):
     Args:
         compiler (Compiler): An instance of the Compiler class to use for compilation.
         path (str): Directory for all compilation outputs to be saved to
-        url (str): URL of the target
+        url (str): URL of the target (may be empty when --schema-file is used)
     """
     print("(C) In compile-graph mode!")
     compiler.run()
@@ -122,8 +122,12 @@ def main(args: dict):
         sys.exit(1)
 
     # compile-chains works from disk — URL not needed; all other modes require it
-    if args['mode'] != "compile-chains" and not args.get('url'):
-        print(f"--url is required for mode '{args['mode']}'")
+    # unless a local --schema-file is provided (which eliminates the need for live introspection
+    # during compile/compile-graph phases — note: fuzz/run still need a URL for request sending)
+    schema_file = args.get('schema_file') or ""
+    schema_only_modes = {"compile", "compile-graph"}
+    if args['mode'] != "compile-chains" and not args.get('url') and not (schema_file and args['mode'] in schema_only_modes):
+        print(f"--url is required for mode '{args['mode']}' (or provide --schema-file for compile/compile-graph modes)")
         sys.exit(1)
 
     # If not compile mode, check if compiled directory exists
@@ -244,11 +248,16 @@ def main(args: dict):
         config.DEBUG = True
         print("(P) Classic coverage mode enabled — all non-error responses count as successes")
 
+    # Apply schema file CLI override
+    if args.get('schema_file'):
+        config.SCHEMA_FILE = args['schema_file']
+        print(f"(P) Using local schema file: {config.SCHEMA_FILE}")
+
     # Persist the final resolved config (file defaults + CLI overrides) back to disk
     write_config_to_toml(f"{args['path']}/{config.CONFIG_FILE_NAME}")
 
     # Initialize the compiler and fuzzer
-    compiler = Compiler(args['path'], args['url'])
+    compiler = Compiler(args['path'], args.get('url') or "", schema_file=config.SCHEMA_FILE)
     # Start the program
     if args['mode'] == "compile":
         run_compile_mode(compiler, config.OUTPUT_DIRECTORY, args['url'])
@@ -315,8 +324,9 @@ if __name__ == "__main__":
 
     # Parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--url", help="remote host URL (required for all modes except compile-chains)", required=False)
+    parser.add_argument("--url", help="remote host URL (required for all modes except compile-chains and compile/compile-graph/run with --schema-file)", required=False)
     parser.add_argument("--path", help=f"directory location for files to be saved-to/used-from. Defaults to {config.OUTPUT_DIRECTORY}", required=False)
+    parser.add_argument("--schema-file", help="path to a local GraphQL introspection JSON file; skips live introspection when provided (compile and compile-graph modes only — fuzz/run/idor/single still require --url)", required=False)
     parser.add_argument("--config", help="TOML configuration file for the program", required=False)
     parser.add_argument("--mode", help="mode to run the program in", choices=["compile", "compile-graph", "compile-chains", "fuzz", "idor", "run", "single"], required=True)
     parser.add_argument("--auth", help="authentication token(s). Can be 'token' or 'profile=token'. Multiple allowed.", action="append", required=False)

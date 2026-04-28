@@ -40,6 +40,9 @@ COMPILED_QUERIES_FILE_NAME = f"{COMPILED_DIR_NAME}/compiled_queries.yml"
 COMPILED_SUBSCRIPTIONS_FILE_NAME = f"{COMPILED_DIR_NAME}/compiled_subscriptions.yml"
 CHAINS_DIR_NAME = f"{COMPILED_DIR_NAME}/chains"
 
+"""For loading schema from a local file instead of live introspection"""
+SCHEMA_FILE: str = ""  # Path to a local GraphQL introspection JSON file; when set, skips live introspection
+
 """For clairvoyance"""
 WORDLIST_PATH = ""
 
