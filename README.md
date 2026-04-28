@@ -51,6 +51,12 @@ docker pull omar2535/graphqler:latest
 docker run --rm omar2535/graphqler --help
 ```
 
+or [uvx](https://docs.astral.sh/uv/guides/tools/)
+
+```sh
+uvx graphqler --help
+```
+
 For a more in-depth guide, check out the [installation guide](./docs/installation.md).
 
 ## Interactive TUI
