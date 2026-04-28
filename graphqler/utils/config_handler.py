@@ -1,7 +1,9 @@
+from pathlib import Path
+import shutil
+import tomllib
+
 from graphqler import config
 from graphqler.utils.file_utils import get_graphqler_root
-import tomllib
-import os
 
 
 def write_config_to_toml(path: str) -> None:
@@ -99,9 +101,11 @@ def generate_new_config(config_file_to_write: str) -> None:
     Args:
         config_file_to_write (str): The config file to write
     """
-    # copy from the base path of the graphqler package
     project_root = get_graphqler_root()
-    os.system(f"cp {project_root}/examples/config.toml {config_file_to_write}")
+    source = project_root / "examples" / "config.toml"
+    destination = Path(config_file_to_write)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, destination)
 
 
 def does_config_file_exist_in_path(path: str) -> bool:
@@ -113,4 +117,4 @@ def does_config_file_exist_in_path(path: str) -> bool:
     Returns:
         bool: Whether the config file exists
     """
-    return os.path.exists(f"{path}/{config.CONFIG_FILE_NAME}")
+    return Path(path, config.CONFIG_FILE_NAME).exists()

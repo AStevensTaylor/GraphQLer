@@ -121,10 +121,19 @@ def main(args: dict):
         print("Please provide a mode to run the program in")
         sys.exit(1)
 
+    preloaded_config = None
+    config_source = None
+    if args.get('config'):
+        preloaded_config = parse_config(args['config'])
+        config_source = "provided"
+    elif args.get('path') and does_config_file_exist_in_path(args['path']):
+        preloaded_config = parse_config(f"{args['path']}/{config.CONFIG_FILE_NAME}")
+        config_source = "path"
+
     # compile-chains works from disk — URL not needed; all other modes require it
     # unless a local --schema-file is provided (which eliminates the need for live introspection
     # during compile/compile-graph phases — note: fuzz/run still need a URL for request sending)
-    schema_file = args.get('schema_file') or ""
+    schema_file = args.get('schema_file') or (preloaded_config or {}).get("SCHEMA_FILE") or ""
     schema_only_modes = {"compile", "compile-graph"}
     if args['mode'] != "compile-chains" and not args.get('url') and not (schema_file and args['mode'] in schema_only_modes):
         print(f"--url is required for mode '{args['mode']}' (or provide --schema-file for compile/compile-graph modes)")
@@ -145,14 +154,12 @@ def main(args: dict):
         config.PROXY = args['proxy']
 
     # Parse config if provided
-    if 'config' in args and args['config']:
+    if preloaded_config is not None and config_source == "provided":
         print("(P) Using provided config file")
-        new_config = parse_config(args['config'])
-        set_config(new_config)
-    elif does_config_file_exist_in_path(args['path']):
+        set_config(preloaded_config)
+    elif preloaded_config is not None and config_source == "path":
         print("(P) Using config file in path")
-        new_config = parse_config(f"{args['path']}/{config.CONFIG_FILE_NAME}")
-        set_config(new_config)
+        set_config(preloaded_config)
     else:
         print("(P) Generating new config")
         generate_new_config(f"{args['path']}/{config.CONFIG_FILE_NAME}")
