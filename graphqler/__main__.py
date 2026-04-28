@@ -281,8 +281,11 @@ def main(args: dict):
         run_single_mode(args['path'], args['url'], args['node'])
 
 
-# If running as a CLI
-if __name__ == "__main__":
+
+def cli():
+    """
+    Python callable to allow for script calling
+    """
     # If version, display version and exit
     if "--version" in sys.argv:
         version = importlib.metadata.version("GraphQLer")
@@ -367,3 +370,7 @@ if __name__ == "__main__":
     if args_as_dict['path'] is None:
         args_as_dict['path'] = config.OUTPUT_DIRECTORY
     main(args_as_dict)
+
+# If running as a CLI
+if __name__ == "__main__":
+    cli()
