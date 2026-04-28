@@ -154,11 +154,11 @@ def main(args: dict):
         config.PROXY = args['proxy']
 
     # Parse config if provided
-    if preloaded_config is not None and config_source == "provided":
-        print("(P) Using provided config file")
-        set_config(preloaded_config)
-    elif preloaded_config is not None and config_source == "path":
-        print("(P) Using config file in path")
+    if preloaded_config is not None:
+        if config_source == "provided":
+            print("(P) Using provided config file")
+        else:
+            print("(P) Using config file in path")
         set_config(preloaded_config)
     else:
         print("(P) Generating new config")
